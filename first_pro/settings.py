@@ -20,7 +20,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'accounts.apps.AccountsConfig',
+
+    'proj_accounts.apps.AccountsConfig',
     'contacts.apps.ContactsConfig',
     'listings.apps.ListingsConfig',
     'pages.apps.PagesConfig',
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+
 ]
 
 MIDDLEWARE = [
@@ -123,15 +125,22 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
-
+STATIC_ROOT=os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'first_pro/static')
 ]
 
-# STATIC_ROOT=os.path.join(BASE_DIR, 'first_pro/static/../static')
+
 
 
 # Media Folder Setting.
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+
+}

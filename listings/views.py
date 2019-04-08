@@ -1,9 +1,8 @@
 from django.shortcuts import render
+from django.db.models import Q
 from django.core.paginator import Paginator
-from .models import Listing, Realtor
-from listings.chioces import (price_choices,
-                              bedroom_choices,
-                              state_choices)
+from .models import Listing
+from listings.chioces import (price_choices)
 
 
 def index(request):
@@ -27,52 +26,68 @@ def listing(request, listing_id):
 
 
 def search(request):
+    queryset_list = []
+    # print(Listing.objects.values_list('state'))
+    # print(Listing.objects.values_list('address', flat=True))
+
     #  QuerySet rules.
 
     #  Rules 1 : Sorting
-    queryset_list = Listing.objects.order_by('-list_date')
-    # print(Listing.objects.values())
-    # print(Listing.objects.values_list('address', flat=True))
-    # print(Listing.objects.values_list('address', flat=False))
+    # listings = Listing.objects.order_by('-list_date')
+
+    state_choices = remove_dup_get(Listing, 'state')
+    city_choices = remove_dup_get(Listing, 'city')
+    print('city_choices : %s' % city_choices)
+    bedrooms_choices = remove_dup_get(Listing, 'bedrooms')
+
+    rules = Q(bedrooms__gte=0)
 
     #  Rules 2 :filters == keywords
     if 'keywords' in request.GET:
-        keywords = request.GET['keywords']
-        if keywords:
-            queryset_list=queryset_list.\
-                filter(description__icontains=keywords)
+        keywords_val = request.GET['keywords']
+        if keywords_val:
+            rules &= Q(description__icontains=keywords_val)
 
     #  Rules 3 :filters == City
     if 'city' in request.GET:
-        city = request.GET['city']
-        if city:
-            queryset_list = queryset_list. \
-                filter(description__iexact=city)
+        city_val = request.GET['city']
+        if city_val:
+            rules = rules & Q(city__iexact=city_val)
 
     #  Rules 4 :filters == state
     if 'state' in request.GET:
         state = request.GET['state']
         if state:
-            queryset_list = queryset_list. \
-                filter(description__exact=state)
+            rules = rules & Q(state__iexact=state)
 
     #  Rules 4 :filters == bedrooms
     if 'bedrooms' in request.GET:
         bedrooms = request.GET['bedrooms']
         if bedrooms:
-            queryset_list = queryset_list. \
-                filter(description__lte=bedrooms)
+            rules = rules & Q(bedrooms__gte=bedrooms)
 
     #  Rules 4 :filters == price
     if 'price' in request.GET:
         price = request.GET['price']
         if price:
-            queryset_list = queryset_list. \
-                filter(description__lte=price)
+            rules = rules & Q(price__lte=price)
 
-    return render(request, 'listings/search.html', {'state_choices': state_choices,
-                                                    'bedroom_choices': bedroom_choices,
-                                                    'price_choices': price_choices,
-                                                    'listings': queryset_list,
-                                                    'values': request.GET})
+    if rules:
+        queryset_list = Listing.objects.filter(rules)
 
+    context = {'state_choices': state_choices,
+               'city_choices': city_choices,
+               'bedrooms_choices': bedrooms_choices,
+               'price_choices': price_choices,
+               'listings': queryset_list,
+               'values': request.GET}
+
+    return render(request, 'listings/search.html', context)
+
+
+def remove_dup_get(model, f_name):
+    dict = []
+    for item in model.objects.values_list(f_name, flat=True):
+        if item not in dict:
+            dict.append(item)
+    return dict
